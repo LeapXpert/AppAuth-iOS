@@ -129,10 +129,9 @@ NS_ASSUME_NONNULL_BEGIN
   AppAuthRequestTrace(@"Authorization Response: %@", URL);
   
   // checks for an invalid state
-  if (!_pendingauthorizationFlowCallback) {
-    [NSException raise:OIDOAuthExceptionInvalidAuthorizationFlow
-                format:@"%@", OIDOAuthExceptionInvalidAuthorizationFlow, nil];
-  }
+  // if (!_pendingauthorizationFlowCallback) {
+  //   [NSException raise:OIDOAuthExceptionInvalidAuthorizationFlow format:@"%@", OIDOAuthExceptionInvalidAuthorizationFlow, nil];
+  //}
 
   OIDURLQueryComponent *query = [[OIDURLQueryComponent alloc] initWithURL:URL];
 
