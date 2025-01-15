@@ -19,8 +19,13 @@
 
 #import "OIDAuthorizationResponseTests.h"
 #import "OIDTokenRequestTests.h"
-#import "Source/OIDTokenRequest.h"
-#import "Source/OIDTokenResponse.h"
+
+#if SWIFT_PACKAGE
+@import AppAuthCore;
+#else
+#import "Sources/AppAuthCore/OIDTokenRequest.h"
+#import "Sources/AppAuthCore/OIDTokenResponse.h"
+#endif
 
 // Ignore warnings about "Use of GNU statement expression extension" which is raised by our use of
 // the XCTAssert___ macros.

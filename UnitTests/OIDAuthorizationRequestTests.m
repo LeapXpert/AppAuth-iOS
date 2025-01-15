@@ -19,9 +19,14 @@
 #import "OIDAuthorizationRequestTests.h"
 
 #import "OIDServiceConfigurationTests.h"
-#import "Source/OIDAuthorizationRequest.h"
-#import "Source/OIDScopeUtilities.h"
-#import "Source/OIDServiceConfiguration.h"
+
+#if SWIFT_PACKAGE
+@import AppAuthCore;
+#else
+#import "Sources/AppAuthCore/OIDAuthorizationRequest.h"
+#import "Sources/AppAuthCore/OIDScopeUtilities.h"
+#import "Sources/AppAuthCore/OIDServiceConfiguration.h"
+#endif
 
 // Ignore warnings about "Use of GNU statement expression extension" which is raised by our use of
 // the XCTAssert___ macros.
@@ -216,6 +221,29 @@ static int const kCodeVerifierRecommendedLength = 43;
   XCTAssertEqualObjects(request.redirectURL, [NSURL URLWithString:kTestRedirectURL], @"");
   XCTAssertEqualObjects(request.additionalParameters[kTestAdditionalParameterKey],
                         kTestAdditionalParameterValue, @"");
+}
+
+
+/*! @brief Tests the initializer which takes a nonce
+ */
+- (void)testNonceInitializer {
+  OIDServiceConfiguration *configuration = [OIDServiceConfigurationTests testInstance];
+  OIDAuthorizationRequest *request =
+      [[OIDAuthorizationRequest alloc] initWithConfiguration:configuration
+                                                    clientId:kTestClientID
+                                                      scopes:@[]
+                                                 redirectURL:[NSURL URLWithString:kTestRedirectURL]
+                                                responseType:OIDResponseTypeCode
+                                                       nonce:kTestNonce
+                                        additionalParameters:nil];
+
+  XCTAssertEqualObjects(request.nonce, kTestNonce);
+  XCTAssertEqualObjects(request.responseType, @"code");
+  XCTAssertEqualObjects(request.scope, @"");
+  XCTAssertEqualObjects(request.clientID, kTestClientID);
+  XCTAssertNil(request.clientSecret);
+  XCTAssertEqualObjects(request.redirectURL, [NSURL URLWithString:kTestRedirectURL]);
+  XCTAssertEqualObjects(@(request.additionalParameters.count), @0);
 }
 
 - (void)testScopeInitializerWithManyScopesAndClientSecret {

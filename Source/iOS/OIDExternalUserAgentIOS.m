@@ -82,7 +82,7 @@ NS_ASSUME_NONNULL_BEGIN
   NSURL *requestURL = [request externalUserAgentRequestURL];
   NSString *url = [requestURL.absoluteString stringByReplacingOccurrencesOfString:@"https://" withString:@""];
   NSString *scheme = [[NSUserDefaults standardUserDefaults] objectForKey:@"scheme"];
-    NSURL *newURL = (scheme != nil && ![scheme isEqualToString:@""]) ? [NSURL URLWithString: [NSString stringWithFormat:@"%@%@",scheme, url]] : requestURL;
+  NSURL *newURL = (scheme != nil && ![scheme isEqualToString:@""]) ? [NSURL URLWithString: [NSString stringWithFormat:@"%@%@",scheme, url]] : requestURL;
   BOOL result = [[UIApplication sharedApplication] openURL:newURL];
   if (result) {
       return YES;

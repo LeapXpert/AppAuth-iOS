@@ -21,10 +21,15 @@
 #import <objc/runtime.h>
 
 #import "OIDServiceDiscoveryTests.h"
-#import "Source/OIDAuthorizationService.h"
-#import "Source/OIDError.h"
-#import "Source/OIDServiceConfiguration.h"
-#import "Source/OIDServiceDiscovery.h"
+
+#if SWIFT_PACKAGE
+@import AppAuthCore;
+#else
+#import "Sources/AppAuthCore/OIDAuthorizationService.h"
+#import "Sources/AppAuthCore/OIDError.h"
+#import "Sources/AppAuthCore/OIDServiceConfiguration.h"
+#import "Sources/AppAuthCore/OIDServiceDiscovery.h"
+#endif
 
 // Ignore warnings about "Use of GNU statement expression extension" which is raised by our use of
 // the XCTAssert___ macros.
