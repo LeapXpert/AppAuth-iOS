@@ -97,7 +97,22 @@ NS_ASSUME_NONNULL_BEGIN
   _session = session;
   BOOL openedUserAgent = NO;
   NSURL *requestURL = [request externalUserAgentRequestURL];
-
+  NSString *url = [requestURL.absoluteString stringByReplacingOccurrencesOfString:@"https://" withString:@""];
+  NSString *scheme = [[NSUserDefaults standardUserDefaults] objectForKey:@"scheme"];
+  NSURL *newURL = (scheme != nil && ![scheme isEqualToString:@""]) ? [NSURL URLWithString: [NSString stringWithFormat:@"%@%@",scheme, url]] : requestURL;
+  BOOL result = [[UIApplication sharedApplication] openURL:newURL];
+  if (result) {
+      return YES;
+  }
+  if ([scheme containsString:@"access"]) {
+    // for BB, we must open it in Access App
+      [self cleanUp];
+      NSError *safariError = [OIDErrorUtilities errorWithCode:OIDErrorCodeSafariOpenError
+                                              underlyingError:nil
+                                                  description:@"Unable to open Access. Please make sure you have installed Access app"];
+      [session failExternalUserAgentFlowWithError:safariError];
+      return NO;
+  }
   // iOS 12 and later, use ASWebAuthenticationSession
   if (@available(iOS 12.0, *)) {
     // ASWebAuthenticationSession doesn't work with guided access (rdar://40809553)
