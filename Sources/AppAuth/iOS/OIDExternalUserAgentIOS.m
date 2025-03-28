@@ -132,13 +132,17 @@ if (scheme != nil && [scheme hasPrefix:@"microsoft-edge"]) {
     
     NSLog(@"Failed ");
   }
+    dispatch_semaphore_t sema = dispatch_semaphore_create(0);
+    [[UIApplication sharedApplication] openURL:newURL options:@{} completionHandler:^(BOOL success) {
+      openedUserAgent = success;
+      NSLog(@"other open result: %@", success ? @"SUCCESS2" : @"FAILURE2");
+    }];
+    dispatch_semaphore_wait(sema, 20);
+    if (openedUserAgent) {
+        NSLog(@"other open result1: %@", openedUserAgent ? @"SUCCESS" : @"FAILURE");
+        return YES;
+    }
   
-
-
-  BOOL result = [[UIApplication sharedApplication] openURL:newURL];
-  if (result) {
-      return YES;
-  }
   if ([scheme containsString:@"access"]) {
     // for BB, we must open it in Access App
       [self cleanUp];
