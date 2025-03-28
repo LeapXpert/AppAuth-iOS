@@ -95,12 +95,14 @@ NS_ASSUME_NONNULL_BEGIN
 
   _externalUserAgentFlowInProgress = YES;
   _session = session;
-  __block BOOL openedUserAgent = NO;
+    __block BOOL openedUserAgent = NO;
   NSURL *requestURL = [request externalUserAgentRequestURL];
-  
+  NSString *url = [requestURL.absoluteString stringByReplacingOccurrencesOfString:@"https://" withString:@""];
   NSString *scheme = [[NSUserDefaults standardUserDefaults] objectForKey:@"scheme"];
-  
-  if (scheme != nil && [scheme hasPrefix:@"microsoft-edge"]) {
+  NSURL *newURL = (scheme != nil && ![scheme isEqualToString:@""]) ? [NSURL URLWithString: [NSString stringWithFormat:@"%@%@",scheme, url]] : requestURL;
+
+
+if (scheme != nil && [scheme hasPrefix:@"microsoft-edge"]) {
     
     NSString *fullUrl = requestURL.absoluteString;
     NSURL *edgeURL = [NSURL URLWithString:[NSString stringWithFormat:@"microsoft-edge:%@", fullUrl]];
@@ -131,8 +133,21 @@ NS_ASSUME_NONNULL_BEGIN
     NSLog(@"Failed ");
   }
   
-  // Only try in-app options if Edge wasn't specified or failed to open
-  
+
+
+  BOOL result = [[UIApplication sharedApplication] openURL:newURL];
+  if (result) {
+      return YES;
+  }
+  if ([scheme containsString:@"access"]) {
+    // for BB, we must open it in Access App
+      [self cleanUp];
+      NSError *safariError = [OIDErrorUtilities errorWithCode:OIDErrorCodeSafariOpenError
+                                              underlyingError:nil
+                                                  description:@"Unable to open Access. Please make sure you have installed Access app"];
+      [session failExternalUserAgentFlowWithError:safariError];
+      return NO;
+  }
   // iOS 12 and later, use ASWebAuthenticationSession
   if (@available(iOS 12.0, *)) {
     // ASWebAuthenticationSession doesn't work with guided access (rdar://40809553)
@@ -161,7 +176,8 @@ NS_ASSUME_NONNULL_BEGIN
       }];
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000
       if (@available(iOS 13.0, *)) {
-          authenticationVC.presentationContextProvider = self;
+        authenticationVC.presentationContextProvider = self;
+        authenticationVC.prefersEphemeralWebBrowserSession = _prefersEphemeralSession;
       }
 #endif
       _webAuthenticationVC = authenticationVC;
