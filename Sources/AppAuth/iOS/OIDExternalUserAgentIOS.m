@@ -95,24 +95,44 @@ NS_ASSUME_NONNULL_BEGIN
 
   _externalUserAgentFlowInProgress = YES;
   _session = session;
-  BOOL openedUserAgent = NO;
+  __block BOOL openedUserAgent = NO;
   NSURL *requestURL = [request externalUserAgentRequestURL];
-  NSString *url = [requestURL.absoluteString stringByReplacingOccurrencesOfString:@"https://" withString:@""];
+  
   NSString *scheme = [[NSUserDefaults standardUserDefaults] objectForKey:@"scheme"];
-  NSURL *newURL = (scheme != nil && ![scheme isEqualToString:@""]) ? [NSURL URLWithString: [NSString stringWithFormat:@"%@%@",scheme, url]] : requestURL;
-  BOOL result = [[UIApplication sharedApplication] openURL:newURL];
-  if (result) {
+  
+  if (scheme != nil && [scheme hasPrefix:@"microsoft-edge"]) {
+    
+    NSString *fullUrl = requestURL.absoluteString;
+    NSURL *edgeURL = [NSURL URLWithString:[NSString stringWithFormat:@"microsoft-edge:%@", fullUrl]];
+          
+    NSLog(@"LW egde: %@", edgeURL);
+    if (@available(iOS 10.0, *)) {
+      dispatch_semaphore_t sema = dispatch_semaphore_create(0);
+      [[UIApplication sharedApplication] openURL:edgeURL options:@{} completionHandler:^(BOOL success) {
+        openedUserAgent = success;
+        NSLog(@"edge open result: %@", success ? @"SUCCESS" : @"FAILURE");
+        dispatch_semaphore_signal(sema);
+      }];
+      dispatch_semaphore_wait(sema, 20);
+    } else {
+      // Fallback for very old iOS versions
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+      openedUserAgent = [[UIApplication sharedApplication] openURL:edgeURL];
+#pragma clang diagnostic pop
+      NSLog(@"Microsoft Edge open result (legacy): %@", openedUserAgent ? @"SUCCESS" : @"FAILURE");
+    }
+    
+    if (openedUserAgent) {
+      NSLog(@"Successfully opened in Edgee");
       return YES;
+    }
+    
+    NSLog(@"Failed ");
   }
-  if ([scheme containsString:@"access"]) {
-    // for BB, we must open it in Access App
-      [self cleanUp];
-      NSError *safariError = [OIDErrorUtilities errorWithCode:OIDErrorCodeSafariOpenError
-                                              underlyingError:nil
-                                                  description:@"Unable to open Access. Please make sure you have installed Access app"];
-      [session failExternalUserAgentFlowWithError:safariError];
-      return NO;
-  }
+  
+  // Only try in-app options if Edge wasn't specified or failed to open
+  
   // iOS 12 and later, use ASWebAuthenticationSession
   if (@available(iOS 12.0, *)) {
     // ASWebAuthenticationSession doesn't work with guided access (rdar://40809553)
@@ -141,8 +161,7 @@ NS_ASSUME_NONNULL_BEGIN
       }];
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000
       if (@available(iOS 13.0, *)) {
-        authenticationVC.presentationContextProvider = self;
-        authenticationVC.prefersEphemeralWebBrowserSession = _prefersEphemeralSession;
+          authenticationVC.presentationContextProvider = self;
       }
 #endif
       _webAuthenticationVC = authenticationVC;
