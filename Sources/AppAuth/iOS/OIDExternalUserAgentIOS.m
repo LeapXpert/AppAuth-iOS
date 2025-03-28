@@ -103,14 +103,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 
 if (scheme != nil && [scheme hasPrefix:@"microsoft-edge"]) {
-    
-    NSString *fullUrl = requestURL.absoluteString;
-    NSURL *edgeURL = [NSURL URLWithString:[NSString stringWithFormat:@"microsoft-edge:%@", fullUrl]];
-          
-    NSLog(@"LW egde: %@", edgeURL);
+    NSLog(@"LW egde: %@", newURL);
     if (@available(iOS 10.0, *)) {
       dispatch_semaphore_t sema = dispatch_semaphore_create(0);
-      [[UIApplication sharedApplication] openURL:edgeURL options:@{} completionHandler:^(BOOL success) {
+        [[UIApplication sharedApplication] openURL:newURL options:@{} completionHandler:^(BOOL success) {
         openedUserAgent = success;
         NSLog(@"edge open result: %@", success ? @"SUCCESS" : @"FAILURE");
         dispatch_semaphore_signal(sema);
@@ -120,7 +116,7 @@ if (scheme != nil && [scheme hasPrefix:@"microsoft-edge"]) {
       // Fallback for very old iOS versions
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-      openedUserAgent = [[UIApplication sharedApplication] openURL:edgeURL];
+        openedUserAgent = [[UIApplication sharedApplication] openURL:newURL];
 #pragma clang diagnostic pop
       NSLog(@"Microsoft Edge open result (legacy): %@", openedUserAgent ? @"SUCCESS" : @"FAILURE");
     }
