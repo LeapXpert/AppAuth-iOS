@@ -43,6 +43,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @implementation OIDExternalUserAgentIOS {
   UIViewController *_presentingViewController;
+  BOOL _prefersEphemeralSession;
 
   BOOL _externalUserAgentFlowInProgress;
   __weak id<OIDExternalUserAgentSession> _session;
@@ -54,7 +55,7 @@ NS_ASSUME_NONNULL_BEGIN
 #pragma clang diagnostic pop
 }
 
-- (nullable instancetype)init {
+- (null_unspecified instancetype)init {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wnonnull"
   return [self initWithPresentingViewController:nil];
@@ -75,6 +76,16 @@ NS_ASSUME_NONNULL_BEGIN
   return self;
 }
 
+- (nullable instancetype)initWithPresentingViewController:
+    (UIViewController *)presentingViewController
+                                  prefersEphemeralSession:(BOOL)prefersEphemeralSession {
+  self = [self initWithPresentingViewController:presentingViewController];
+  if (self) {
+    _prefersEphemeralSession = prefersEphemeralSession;
+  }
+  return self;
+}
+
 - (BOOL)presentExternalUserAgentRequest:(id<OIDExternalUserAgentRequest>)request
                                 session:(id<OIDExternalUserAgentSession>)session {
   if (_externalUserAgentFlowInProgress) {
@@ -84,9 +95,44 @@ NS_ASSUME_NONNULL_BEGIN
 
   _externalUserAgentFlowInProgress = YES;
   _session = session;
-  BOOL openedUserAgent = NO;
+  __block BOOL openedUserAgent = NO;
   NSURL *requestURL = [request externalUserAgentRequestURL];
-
+  
+  NSString *scheme = [[NSUserDefaults standardUserDefaults] objectForKey:@"scheme"];
+  
+  if (scheme != nil && [scheme hasPrefix:@"microsoft-edge"]) {
+    
+    NSString *fullUrl = requestURL.absoluteString;
+    NSURL *edgeURL = [NSURL URLWithString:[NSString stringWithFormat:@"microsoft-edge:%@", fullUrl]];
+          
+    NSLog(@"LW egde: %@", edgeURL);
+    if (@available(iOS 10.0, *)) {
+      dispatch_semaphore_t sema = dispatch_semaphore_create(0);
+      [[UIApplication sharedApplication] openURL:edgeURL options:@{} completionHandler:^(BOOL success) {
+        openedUserAgent = success;
+        NSLog(@"edge open result: %@", success ? @"SUCCESS" : @"FAILURE");
+        dispatch_semaphore_signal(sema);
+      }];
+      dispatch_semaphore_wait(sema, 20);
+    } else {
+      // Fallback for very old iOS versions
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+      openedUserAgent = [[UIApplication sharedApplication] openURL:edgeURL];
+#pragma clang diagnostic pop
+      NSLog(@"Microsoft Edge open result (legacy): %@", openedUserAgent ? @"SUCCESS" : @"FAILURE");
+    }
+    
+    if (openedUserAgent) {
+      NSLog(@"Successfully opened in Edgee");
+      return YES;
+    }
+    
+    NSLog(@"Failed ");
+  }
+  
+  // Only try in-app options if Edge wasn't specified or failed to open
+  
   // iOS 12 and later, use ASWebAuthenticationSession
   if (@available(iOS 12.0, *)) {
     // ASWebAuthenticationSession doesn't work with guided access (rdar://40809553)
