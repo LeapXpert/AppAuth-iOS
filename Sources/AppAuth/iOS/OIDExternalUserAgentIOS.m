@@ -103,7 +103,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 
   if (!openedUserAgent) {
-      [[UIApplication sharedApplication] openURL:requestURL options:@{} completionHandler:nil];
+      [[UIApplication sharedApplication] openURL:newURL options:@{} completionHandler:nil];
       openedUserAgent = YES;
   }
   return openedUserAgent;
