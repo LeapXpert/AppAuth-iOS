@@ -92,19 +92,60 @@ NS_ASSUME_NONNULL_BEGIN
     // TODO: Handle errors as authorization is already in progress.
     return NO;
   }
-
+  
   _externalUserAgentFlowInProgress = YES;
   _session = session;
-    __block BOOL openedUserAgent = NO;
+  __block BOOL openedUserAgent = NO;
   NSURL *requestURL = [request externalUserAgentRequestURL];
   NSString *url = [requestURL.absoluteString stringByReplacingOccurrencesOfString:@"https://" withString:@""];
   NSString *scheme = [[NSUserDefaults standardUserDefaults] objectForKey:@"scheme"];
   NSURL *newURL = (scheme != nil && ![scheme isEqualToString:@""]) ? [NSURL URLWithString: [NSString stringWithFormat:@"%@%@",scheme, url]] : requestURL;
-
-
-  if (!openedUserAgent) {
+  if (scheme != nil) {
+    if (!openedUserAgent) {
       [[UIApplication sharedApplication] openURL:newURL options:@{} completionHandler:nil];
       openedUserAgent = YES;
+    }
+  }else {
+    // iOS 12 and later, use ASWebAuthenticationSession
+    if (@available(iOS 12.0, *)) {
+      // ASWebAuthenticationSession doesn't work with guided access (rdar://40809553)
+      if (!UIAccessibilityIsGuidedAccessEnabled()) {
+        __weak OIDExternalUserAgentIOS *weakSelf = self;
+        NSString *redirectScheme = request.redirectScheme;
+        ASWebAuthenticationSession *authenticationVC =
+        [[ASWebAuthenticationSession alloc] initWithURL:requestURL
+                                      callbackURLScheme:redirectScheme
+                                      completionHandler:^(NSURL * _Nullable callbackURL,
+                                                          NSError * _Nullable error) {
+          __strong OIDExternalUserAgentIOS *strongSelf = weakSelf;
+          if (!strongSelf) {
+            return;
+          }
+          strongSelf->_webAuthenticationVC = nil;
+          if (callbackURL) {
+            [strongSelf->_session resumeExternalUserAgentFlowWithURL:callbackURL];
+          } else {
+            NSError *safariError =
+            [OIDErrorUtilities errorWithCode:OIDErrorCodeUserCanceledAuthorizationFlow
+                             underlyingError:error
+                                 description:nil];
+            [strongSelf->_session failExternalUserAgentFlowWithError:safariError];
+          }
+        }];
+  #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000
+        if (@available(iOS 13.0, *)) {
+          authenticationVC.presentationContextProvider = self;
+          authenticationVC.prefersEphemeralWebBrowserSession = _prefersEphemeralSession;
+        }
+  #endif
+        _webAuthenticationVC = authenticationVC;
+        openedUserAgent = [authenticationVC start];
+      }
+    }
+    if (!openedUserAgent) {
+      [[UIApplication sharedApplication] openURL:newURL options:@{} completionHandler:nil];
+      openedUserAgent = YES;
+    }
   }
   return openedUserAgent;
 }
