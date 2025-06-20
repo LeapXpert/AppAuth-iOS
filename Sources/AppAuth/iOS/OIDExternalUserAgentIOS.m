@@ -102,7 +102,16 @@ NS_ASSUME_NONNULL_BEGIN
   NSURL *newURL = (scheme != nil && ![scheme isEqualToString:@""]) ? [NSURL URLWithString: [NSString stringWithFormat:@"%@%@",scheme, url]] : requestURL;
   if (scheme != nil) {
     if (!openedUserAgent) {
-      [[UIApplication sharedApplication] openURL:newURL options:@{} completionHandler:nil];
+       [[UIApplication sharedApplication] openURL:newURL options:@{} completionHandler:^(BOOL success) {
+          if (success) {
+               NSLog(@"Opened url");
+          }else {
+            UIAlertController *alertVC = [UIAlertController alertControllerWithTitle:nil message:@"Unable to open the external browser. Please check if you have an external browser app installed." preferredStyle:UIAlertControllerStyleAlert];
+            [alertVC addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+            UIViewController *vc1 = [UIApplication sharedApplication].keyWindow.rootViewController;
+            [vc1 presentViewController:alertVC animated:YES completion:nil];
+          }
+      }];
       openedUserAgent = YES;
     }
   }else {
