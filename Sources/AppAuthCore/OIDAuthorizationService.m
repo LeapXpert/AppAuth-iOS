@@ -130,8 +130,10 @@ NS_ASSUME_NONNULL_BEGIN
   
   // checks for an invalid state
   if (!_pendingauthorizationFlowCallback) {
-    [NSException raise:OIDOAuthExceptionInvalidAuthorizationFlow
-                format:@"%@", OIDOAuthExceptionInvalidAuthorizationFlow, nil];
+    // Disable throw back
+    // [NSException raise:OIDOAuthExceptionInvalidAuthorizationFlow
+    //             format:@"%@", OIDOAuthExceptionInvalidAuthorizationFlow, nil];
+    return NO;
   }
 
   OIDURLQueryComponent *query = [[OIDURLQueryComponent alloc] initWithURL:URL];
