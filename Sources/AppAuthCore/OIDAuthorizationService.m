@@ -206,6 +206,7 @@ NS_ASSUME_NONNULL_BEGIN
   OIDEndSessionRequest *_request;
   id<OIDExternalUserAgent> _externalUserAgent;
   OIDEndSessionCallback _pendingEndSessionCallback;
+  BOOL _didFinish;
 }
 - (instancetype)init NS_UNAVAILABLE;
 
@@ -319,6 +320,7 @@ NS_ASSUME_NONNULL_BEGIN
   OIDEndSessionCallback callback = _pendingEndSessionCallback;
   _pendingEndSessionCallback = nil;
   _externalUserAgent = nil;
+  _didFinish = YES;
   if (callback) {
     callback(response, error);
   }
