@@ -270,6 +270,9 @@ NS_ASSUME_NONNULL_BEGIN
     // Disable throw back
     // [NSException raise:OIDOAuthExceptionInvalidAuthorizationFlow
     //             format:@"%@", OIDOAuthExceptionInvalidAuthorizationFlow, nil];
+    if (_didFinish) {
+      return YES;
+    }
     return NO;
   }
   
