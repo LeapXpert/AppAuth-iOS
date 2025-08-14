@@ -61,6 +61,7 @@ NS_ASSUME_NONNULL_BEGIN
   OIDAuthorizationRequest *_request;
   id<OIDExternalUserAgent> _externalUserAgent;
   OIDAuthorizationCallback _pendingauthorizationFlowCallback;
+  BOOL _didFinish;
 }
 
 - (instancetype)initWithRequest:(OIDAuthorizationRequest *)request {
@@ -133,6 +134,9 @@ NS_ASSUME_NONNULL_BEGIN
     // Disable throw back
     // [NSException raise:OIDOAuthExceptionInvalidAuthorizationFlow
     //             format:@"%@", OIDOAuthExceptionInvalidAuthorizationFlow, nil];
+    if (_didFinish) {
+      return YES;
+    }
     return NO;
   }
 
@@ -189,6 +193,7 @@ NS_ASSUME_NONNULL_BEGIN
   OIDAuthorizationCallback callback = _pendingauthorizationFlowCallback;
   _pendingauthorizationFlowCallback = nil;
   _externalUserAgent = nil;
+  _didFinish = YES;
   if (callback) {
     callback(response, error);
   }
